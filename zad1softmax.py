@@ -4,32 +4,25 @@ import matplotlib.pyplot as plt
 
 class NeuralNetwork:
     def __init__(self, input_size, hidden_size, output_size, learning_rate):
-        # Xavier initialization
         limit_in = np.sqrt(6.0 / (input_size + hidden_size))
         self.weights_input_hidden = np.random.uniform(-limit_in, limit_in, (input_size, hidden_size))
         self.bias_hidden = np.zeros((1, hidden_size))
-
         limit_out = np.sqrt(6.0 / (hidden_size + output_size))
         self.weights_hidden_output = np.random.uniform(-limit_out, limit_out, (hidden_size, output_size))
         self.bias_output = np.zeros((1, output_size))
-
         self.learning_rate = learning_rate
 
     @staticmethod
     def relu(x):
         return np.maximum(0, x)
-
     @staticmethod
     def relu_derivative(x):
-        # x jest wejściem do ReLU, jego pochodna:
         return (x > 0).astype(float)
-
     @staticmethod
     def softmax(x):
         x_shifted = x - np.max(x, axis=1, keepdims=True)
         exps = np.exp(x_shifted)
         return exps / np.sum(exps, axis=1, keepdims=True)
-
     @staticmethod
     def cross_entropy(y_true, y_pred):
         epsilon = 1e-15
@@ -45,17 +38,13 @@ class NeuralNetwork:
         return self.final_output
 
     def backward(self, y_true):
-        # gradient wyjścia
-        output_error = self.final_output - y_true  # [N,10]
+        output_error = self.final_output - y_true
 
-        # gradient warstwy ukrytej
         hidden_error = np.dot(output_error, self.weights_hidden_output.T) * self.relu_derivative(self.hidden_input)
 
-        # aktualizacja wag wyjściowych
         self.weights_hidden_output -= self.learning_rate * np.dot(self.hidden_output.T, output_error)
         self.bias_output -= self.learning_rate * np.sum(output_error, axis=0, keepdims=True)
 
-        # aktualizacja wag wejściowych
         self.weights_input_hidden -= self.learning_rate * np.dot(self.input.T, hidden_error)
         self.bias_hidden -= self.learning_rate * np.sum(hidden_error, axis=0, keepdims=True)
 
@@ -65,24 +54,20 @@ class NeuralNetwork:
         n_samples = x_train.shape[0]
 
         for epoch in range(epochs):
-            # Losowe tasowanie danych
             indices = np.arange(n_samples)
             np.random.shuffle(indices)
             x_train = x_train[indices]
             y_train = y_train[indices]
 
             start_time = time.time()
-            # Trenowanie mini-batchami
             for start_idx in range(0, n_samples, batch_size):
                 end_idx = start_idx + batch_size
                 x_batch = x_train[start_idx:end_idx]
                 y_batch = y_train[start_idx:end_idx]
 
-                # forward + backward
                 output = self.forward(x_batch)
                 self.backward(y_batch)
 
-            # Oblicz stratę na całym zbiorze treningowym
             train_output = self.forward(x_train)
             loss = self.cross_entropy(y_train, train_output)
             predictions_train = self.predict(x_train)
@@ -92,7 +77,6 @@ class NeuralNetwork:
             duration = time.time() - start_time
             print(f"Epoka {epoch+1}/{epochs}, Strata: {loss:.6f}, Dokładność tren.: {train_accuracy:.2f}%, Czas: {duration:.2f}s")
 
-            # Early stopping
             if loss < best_loss:
                 best_loss = loss
                 no_improve_count = 0
@@ -134,15 +118,12 @@ def prepare_data(train_images_path, train_labels_path, test_images_path, test_la
     x_test = load_images(test_images_path)
     y_test = load_labels(test_labels_path)
 
-    # Normalizacja
     x_train = x_train.reshape(-1, 28*28) / 255.0
     x_test = x_test.reshape(-1, 28*28) / 255.0
 
-    # One-hot encoding etykiet
     y_train_onehot = np.eye(10)[y_train]
     y_test_onehot = np.eye(10)[y_test]
 
-    # Ograniczenie zbioru dla szybszych testów
     x_train = x_train[:60000]
     y_train_onehot = y_train_onehot[:60000]
     x_test = x_test[:1000]
@@ -156,7 +137,7 @@ if __name__ == "__main__":
     hidden_size = 128
     output_size = 10
     learning_rate = 0.01
-    epochs = 20  # Można zwiększyć np. do 50-100 by uzyskać lepsze wyniki
+    epochs = 15
 
     train_images_path = 'train-images.idx3-ubyte'
     train_labels_path = 'train-labels.idx1-ubyte'
@@ -174,14 +155,12 @@ if __name__ == "__main__":
     accuracy = np.mean(predictions == y_test) * 100
     print(f"Dokładność na danych testowych: {accuracy:.2f}%")
 
-    # Wyświetlanie losowego obrazu z bazy testowej i przewidywanie
     idx = np.random.randint(0, len(x_test))
     random_image = x_test[idx].reshape(28, 28)
     plt.imshow(random_image, cmap='gray')
     plt.title("Losowy przykład z bazy testowej")
     plt.show()
 
-    # Przewidywanie dla pojedynczego obrazu
     prediction_single = nn.predict(x_test[idx].reshape(1, -1))
     print(f"Przewidziana cyfra: {prediction_single[0]}")
 
